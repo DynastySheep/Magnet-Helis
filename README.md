@@ -11,7 +11,7 @@ Lets you spawn cargobob and skylift with functioning magnets. Simply put the scr
 - Skylift has it's own functions for attach/detach via menu since it doesn't have built in functions like cargobob with magnet afaik.
 
 ## Known bugs:
-- Sometimes when you spawn cargobob, the magnet will freeze in place. Simple fix is to teleport to some other area and spawn it there first.
+- Cargobob's magnet freezes in place sometimes, if it happens then spawn the heli in different area first
 
 - Skylift's magnet will not lift vehicles that are occupied by other players. A workaround is to attach the vehicle first and then let the player go inside the attached vehicle. Don't think there is a way to change that apart from forcing  player to get out of the vehicle first - correct me if I'm wrong.
 
