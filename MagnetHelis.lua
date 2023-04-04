@@ -163,7 +163,7 @@ menu.action(menu.my_root(), "Clear spawned helis", {}, "Removes both, cargobob a
     remove_all_vehicles()
 end)
 
-menu.action(menu.my_root(), "Test", {}, "ttt", function()
+menu.action(menu.my_root(), "Clear spawned helis", {}, "Removes both, cargobob and skylift", function()
     remove_all_vehicles()
 end)
 
