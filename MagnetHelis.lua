@@ -25,7 +25,7 @@ end
 if auto_updater == true then error("Invalid auto-updater lib. Please delete your Stand/Lua Scripts/lib/auto-updater.lua and try again") end
 
 auto_updater.run_auto_update({
-    source_url="https://github.com/DynastySheep/Magnet-Helis/main/MagnetHelis.lua",
+    source_url="https://raw.githubusercontent.com/DynastySheep/Magnet-Helis/main/MagnetHelis.lua",
     script_relpath=SCRIPT_RELPATH,
     verify_file_begins_with="--"
 })
