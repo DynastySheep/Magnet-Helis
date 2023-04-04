@@ -24,11 +24,14 @@ if not status then
 end
 if auto_updater == true then error("Invalid auto-updater lib. Please delete your Stand/Lua Scripts/lib/auto-updater.lua and try again") end
 
-auto_updater.run_auto_update({
+local auto_update_config = {
     source_url="https://raw.githubusercontent.com/DynastySheep/Magnet-Helis/main/MagnetHelis.lua",
     script_relpath=SCRIPT_RELPATH,
-    verify_file_begins_with="--"
-})
+    switch_to_branch=selected_branch,
+    verify_file_begins_with="--",
+}
+
+auto_updater.run_auto_update(auto_update_config)
 
 util.require_natives(1627063482)
 
@@ -168,7 +171,7 @@ menu.action(menu.my_root(), "Clear spawned helis", {}, "Removes both, cargobob a
 end)
 
 -- Manually check for updates with a menu option
-menu.action(script_meta_menu, "Check for Update", {}, "The script will automatically check for updates at most daily, but you can manually check using this option anytime.", function()
+menu.action(menu.my_root(), "Check for Update", {}, "The script will automatically check for updates at most daily, but you can manually check using this option anytime.", function()
     auto_update_config.check_interval = 0
     util.toast("Checking for updates")
     auto_updater.run_auto_update(auto_update_config)
