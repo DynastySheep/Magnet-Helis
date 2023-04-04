@@ -33,6 +33,8 @@ local auto_update_config = {
 
 auto_updater.run_auto_update(auto_update_config)
 
+-- Auto Updater Ends Here!
+
 util.require_natives(1627063482)
 
 local SKYLIFT_MODEL = util.joaat("skylift")
