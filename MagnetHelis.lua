@@ -163,6 +163,9 @@ menu.action(menu.my_root(), "Clear spawned helis", {}, "Removes both, cargobob a
     remove_all_vehicles()
 end)
 
+menu.action(menu.my_root(), "Test", {}, "ttt", function()
+end)
+
 -- Manually check for updates with a menu option
 menu.action(script_meta_menu, "Check for Update", {}, "The script will automatically check for updates at most daily, but you can manually check using this option anytime.", function()
     auto_update_config.check_interval = 0
