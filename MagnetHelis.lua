@@ -1,7 +1,7 @@
 -- Magnet Helis
 -- Made By Dynasty
 
--- Auto Updater from https://github.com/hexarobi/stand-lua-auto-updater
+-- [[Auto Updater from https://github.com/hexarobi/stand-lua-auto-updater
 local status, auto_updater = pcall(require, "auto-updater")
 if not status then
     local auto_update_complete = nil util.toast("Installing auto-updater...", TOAST_ALL)
@@ -34,6 +34,8 @@ local auto_update_config = {
 auto_updater.run_auto_update(auto_update_config)
 
 -- Auto Updater Ends Here!
+
+-- [[Main
 
 util.require_natives(1627063482)
 
@@ -135,7 +137,7 @@ function remove_all_vehicles()
     end
 end
 
--- Menus
+-- [[Menus
 
 local cargobobMenu = menu.list(menu.my_root(), "Cargobob", {})
 menu.action(cargobobMenu, "Spawn Cargobob", {}, "Spawn a cargobob with magnet and set player as pilot", function()
