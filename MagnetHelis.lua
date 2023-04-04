@@ -164,6 +164,7 @@ menu.action(menu.my_root(), "Clear spawned helis", {}, "Removes both, cargobob a
 end)
 
 menu.action(menu.my_root(), "Test", {}, "ttt", function()
+    remove_all_vehicles()
 end)
 
 -- Manually check for updates with a menu option
