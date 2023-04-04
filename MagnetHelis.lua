@@ -109,7 +109,7 @@ end
 function attach_vehicle_to_skylift()
     if currentSkylift and ENTITY.DOES_ENTITY_EXIST(currentSkylift) then
         local skyliftPos = ENTITY.GET_ENTITY_COORDS(currentSkylift, true)
-        local radius = 50.0
+        local radius = 10.0
         local vehicle = VEHICLE.GET_CLOSEST_VEHICLE(skyliftPos.x, skyliftPos.y, skyliftPos.z, radius, 0, 70)
         if vehicle ~= 0 then
             ENTITY.ATTACH_ENTITY_TO_ENTITY(vehicle, currentSkylift, 0, 0.0, -3.5, -2.0, 0.0, 0.0, 0.0, true, true, true, false, 0, true)
