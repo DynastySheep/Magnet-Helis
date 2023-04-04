@@ -1,6 +1,7 @@
 # Magnet-Helis
 
 Lets you spawn cargobob and skylift with functioning magnets. Simply put the script in your Lua Scripts folder.
+This script works with **Stand Mod Menu** and haven't been tested on any other mod menus.
 
 ![MagnetHelis](https://user-images.githubusercontent.com/129829409/229707465-6650571d-eb59-474c-8b36-eca3362e7a4e.png)
 
