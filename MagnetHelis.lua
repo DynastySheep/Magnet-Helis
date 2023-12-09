@@ -27,147 +27,191 @@ if auto_updater == true then error("Invalid auto-updater lib. Please delete your
 local auto_update_config = {
     source_url="https://raw.githubusercontent.com/DynastySheep/Magnet-Helis/main/MagnetHelis.lua",
     script_relpath=SCRIPT_RELPATH,
-    switch_to_branch=selected_branch,
-    verify_file_begins_with="--",
 }
 
 auto_updater.run_auto_update(auto_update_config)
 
 -- Auto Updater Ends Here!
 
--- [[Main
+util.require_natives("2944b.g")
 
-util.require_natives(1627063482)
+local playerPed = players.user_ped()
 
 local SKYLIFT_MODEL = util.joaat("skylift")
 local CARGOBOB_MODEL = util.joaat("cargobob")
 
-local currentCargobob = nil
-local currentSkylift = nil
+local spawnedVehicles = {
+    Cargobob = nil,
+    Skylift = nil
+}
+
+local liftMode = 0
 
 local attachedVehicle = nil
 local skyliftMagnetEnabled = false
 
-local spawnedVehicles = {}
-
-local function PlayerPedId()
-    return PLAYER.PLAYER_PED_ID()
+--! Helpers
+function StreamModel(selectedModel)
+    util.request_model(selectedModel, 2000)
 end
 
--- Cargobob
+function GetPlayerPosition()
+    playerPos = GET_ENTITY_COORDS(playerPed)
+    playerHeading = GET_ENTITY_HEADING(playerPed)
+    return playerPos, playerHeading
+end
 
-function spawn_cargobob_with_magnet()
-    STREAMING.REQUEST_MODEL(CARGOBOB_MODEL)
-    local playerPos = ENTITY.GET_ENTITY_COORDS(PlayerPedId(), true)
-    local heading = ENTITY.GET_ENTITY_HEADING(PlayerPedId())
-    local spawnPos = { x = playerPos.x, y = playerPos.y, z = playerPos.z + 5.0 }
-    if currentCargobob and ENTITY.DOES_ENTITY_EXIST(currentCargobob) then
+function CheckForVehicle(vehicleName)
+    local currentCargobob = spawnedVehicles[vehicleName]
+
+    if currentCargobob and DOES_ENTITY_EXIST(currentCargobob) then
         entities.delete_by_handle(currentCargobob)
-    end
-    local cargobob = entities.create_vehicle(CARGOBOB_MODEL, spawnPos, heading)
-    VEHICLE.SET_VEHICLE_ON_GROUND_PROPERLY(cargobob, 1.0)
-    VEHICLE.SET_HELI_BLADES_FULL_SPEED(cargobob)
-    VEHICLE.CREATE_PICK_UP_ROPE_FOR_CARGOBOB(cargobob, 1)
-    currentCargobob = cargobob
-    local playerPed = PlayerPedId()
-    PED.SET_PED_INTO_VEHICLE(playerPed, cargobob, -1)
-    table.insert(spawnedVehicles, cargobob)
-    return cargobob
-end
-
-function remove_cargobob()
-    if currentCargobob and ENTITY.DOES_ENTITY_EXIST(currentCargobob) then
-        entities.delete_by_handle(currentCargobob)
+        spawnedVehicles[vehicleName] = nil
     end
 end
 
--- Skylift
+function GetPlayerVehicle(modelHash, notifyMessage)
+    local currentVehicle = GET_VEHICLE_PED_IS_IN(playerPed, false)
+    local vehicleHash = GET_ENTITY_MODEL(currentVehicle)
 
-function spawn_skylift()
-    STREAMING.REQUEST_MODEL(SKYLIFT_MODEL)
-    local playerPed = PlayerPedId()
-    local playerPos = ENTITY.GET_ENTITY_COORDS(playerPed, true)
-    local heading = ENTITY.GET_ENTITY_HEADING(playerPed)
-    local spawnPos = { x = playerPos.x, y = playerPos.y, z = playerPos.z + 5.0 }
-    if currentSkylift and ENTITY.DOES_ENTITY_EXIST(currentSkylift) then
-        entities.delete_by_handle(currentSkylift)
+    if vehicleHash ~= modelHash then
+        util.toast(notifyMessage)
+        menu.set_value(toggleCargobobPickup, false)
+        return false
     end
-    local skylift = entities.create_vehicle(SKYLIFT_MODEL, spawnPos, heading)
-    VEHICLE.SET_HELI_BLADES_FULL_SPEED(skylift)
-    currentSkylift = skylift
-    PED.SET_PED_INTO_VEHICLE(playerPed, skylift, -1)
-    table.insert(spawnedVehicles, skylift)
-    return skylift
+    return true
 end
 
-function remove_skylift()
-    if currentSkylift and ENTITY.DOES_ENTITY_EXIST(currentSkylift) then
-        entities.delete_by_handle(currentSkylift)
+--! Main
+function SpawnVehicle(vehicleName, modelHash)
+    CheckForVehicle(vehicleName)
+    StreamModel(modelHash)
+
+    local playerPos, playerHeading = GetPlayerPosition()
+    local spawnVehicle = entities.create_vehicle(modelHash, playerPos, playerHeading)
+
+    SET_HELI_BLADES_FULL_SPEED(spawnVehicle)
+    SET_PED_INTO_VEHICLE(playerPed, spawnVehicle, -1)
+
+    spawnedVehicles[vehicleName] = spawnVehicle
+end
+
+function TogglePickupMode(isAttaching)
+    local vehicleMatch = GetPlayerVehicle(CARGOBOB_MODEL, "Only works in cargobob")
+    if not vehicleMatch then
+        return
+    end
+
+    if isAttaching then
+        CREATE_PICK_UP_ROPE_FOR_CARGOBOB(spawnedVehicles.Cargobob, liftMode)
+    else
+        REMOVE_PICK_UP_ROPE_FOR_CARGOBOB(spawnedVehicles.Cargobob)
     end
 end
 
-function attach_vehicle_to_skylift()
-    if currentSkylift and ENTITY.DOES_ENTITY_EXIST(currentSkylift) then
-        local skyliftPos = ENTITY.GET_ENTITY_COORDS(currentSkylift, true)
-        local radius = 10.0
-        local vehicle = VEHICLE.GET_CLOSEST_VEHICLE(skyliftPos.x, skyliftPos.y, skyliftPos.z, radius, 0, 70)
-        if vehicle ~= 0 then
-            ENTITY.ATTACH_ENTITY_TO_ENTITY(vehicle, currentSkylift, 0, 0.0, -3.5, -2.0, 0.0, 0.0, 0.0, true, true, true, false, 0, true)
-            if ENTITY.IS_ENTITY_ATTACHED(vehicle) then
-                attachedVehicle = vehicle
+local function TryGainControl(target)
+    if not NETWORK_HAS_CONTROL_OF_ENTITY(target) and util.is_session_started() then
+
+        local netid = NETWORK_GET_NETWORK_ID_FROM_ENTITY(target)
+        SET_NETWORK_ID_CAN_MIGRATE(netid, true)
+
+        local st_time = os.time()
+        while not NETWORK_HAS_CONTROL_OF_ENTITY(target) do
+            -- intentionally silently fail, otherwise we are gonna spam the everloving shit out of the user
+            if os.time() - st_time >= 5 then
+                ls_log("Failed to request entity control in 5 seconds (entity " .. target .. ")")
+                break
+            end
+            NETWORK_REQUEST_CONTROL_OF_ENTITY(target)
+            util.yield()
+        end
+    end
+end
+
+function SkyliftToggle(attach)
+    if not attach then
+        if attachedVehicle and IS_ENTITY_ATTACHED(attachedVehicle) then
+            DETACH_ENTITY(attachedVehicle, true, true)
+            attachedVehicle = nil
+        end
+        return
+    end
+
+    local vehicleMatch = GetPlayerVehicle(SKYLIFT_MODEL, "Only works in skylift")
+    if not vehicleMatch then
+        return
+    end
+
+    local currentSkylift = spawnedVehicles.Skylift
+    local skyliftPos = GET_ENTITY_COORDS(currentSkylift)
+    local radius = 10.0
+
+    local targetVehicle = GET_CLOSEST_VEHICLE(v3(skyliftPos), radius, 0, 70)
+    if targetVehicle ~= 0 then
+        TryGainControl(targetVehicle)
+        if NETWORK_HAS_CONTROL_OF_ENTITY then
+            ATTACH_ENTITY_TO_ENTITY(targetVehicle, currentSkylift, 0, 0.0, -3.5, -2.0, 0.0, 0.0, 0, true, true, true, false, 2, true, 0)
+
+            if IS_ENTITY_ATTACHED(targetVehicle) then
+                attachedVehicle = targetVehicle
             end
         end
+    else
+        util.toast("Pickup failed - you need to be above vehicle")
+        menu.set_value(toggleSkyliftPickup, false)
     end
 end
 
-function detach_vehicle_from_skylift(vehicle)
-    if ENTITY.IS_ENTITY_ATTACHED(vehicle) then
-        ENTITY.DETACH_ENTITY(vehicle, true, true)
-    end
-end
-
--- Remove all
-
-function remove_all_vehicles()
-    for i, vehicle in ipairs(spawnedVehicles) do
-        if ENTITY.DOES_ENTITY_EXIST(vehicle) then
+--! Removal Functions
+function RemoveAllVehicles()
+    for _, vehicle in pairs(spawnedVehicles) do
+        if DOES_ENTITY_EXIST(vehicle) then
             entities.delete_by_handle(vehicle)
         end
-        spawnedVehicles[i] = nil
     end
+    spawnedVehicles = {}
 end
 
--- [[Menus
+function RemoveSpecificVehicle(vehicleName)
+    entities.delete_by_handle(spawnedVehicles[vehicleName])
+    spawnedVehicles[vehicleName] = nil
+end
 
+--! Menus
 local cargobobMenu = menu.list(menu.my_root(), "Cargobob", {})
-menu.action(cargobobMenu, "Spawn Cargobob", {}, "Spawn a cargobob with magnet and set player as pilot", function()
-    currentCargobob = spawn_cargobob_with_magnet()
+menu.action(cargobobMenu, "Spawn Cargobob", {}, "", function()
+    SpawnVehicle("Cargobob", CARGOBOB_MODEL)
 end)
 
-menu.action(cargobobMenu, "Remove Cargobob", {}, "Remove the current Cargobob", function()
-    remove_cargobob()
+menu.list_select(cargobobMenu, "Choose Pickup Mode", {}, "", {{0, "Hook"}, {1, "Magnet"}}, 0, function(value)
+    liftMode = value
+    SpawnVehicle("Cargobob", CARGOBOB_MODEL)
+    menu.set_value(toggleCargobobPickup, false)
+end)
+
+toggleCargobobPickup = menu.toggle(cargobobMenu, "Toggle Pickup Mode", {}, "", function(isOn)
+    TogglePickupMode(isOn)
+end)
+
+menu.action(cargobobMenu, "Remove Cargobob", {}, "", function()
+    RemoveSpecificVehicle("Cargobob")
 end)
 
 local skyliftMenu = menu.list(menu.my_root(), "Skylift", {})
-menu.action(skyliftMenu, "Spawn Skylift", {}, "Spawn a skylift and set player as pilot", function()
-    spawn_skylift()
+menu.action(skyliftMenu, "Spawn Skylift", {}, "", function()
+    SpawnVehicle("Skylift", SKYLIFT_MODEL)
 end)
 
-menu.action(skyliftMenu, "Remove Skylift", {}, "Remove the current Skylift", function()
-    remove_skylift()
+toggleSkyliftPickup = menu.toggle(skyliftMenu, "Toggle Pickup Mode", {}, "This only works for NPC/Empty vehicles :(", function(isOn)
+    SkyliftToggle(isOn)
 end)
 
-menu.action(skyliftMenu, "Attach/Detach", {}, "Attach the closest vehicle to the Skylift, or detach the currently attached vehicle from the Skylift", function()
-    if attachedVehicle then
-        detach_vehicle_from_skylift(attachedVehicle)
-        attachedVehicle = nil
-    else
-        attach_vehicle_to_skylift()
-    end
+menu.action(skyliftMenu, "Remove Skylift", {}, "", function()
+    RemoveSpecificVehicle("Skylift")
 end)
 
-menu.action(menu.my_root(), "Clear spawned helis", {}, "Removes both, cargobob and skylift", function()
-    remove_all_vehicles()
+menu.action(menu.my_root(), "Clear All", {}, "", function()
+    RemoveAllVehicles()
 end)
 
 -- Manually check for updates with a menu option
@@ -175,4 +219,8 @@ menu.action(menu.my_root(), "Check for Update", {}, "The script will automatical
     auto_update_config.check_interval = 0
     util.toast("Checking for updates")
     auto_updater.run_auto_update(auto_update_config)
+end)
+
+util.on_pre_stop(function()
+    RemoveAllVehicles()
 end)
