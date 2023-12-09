@@ -46,9 +46,7 @@ local spawnedVehicles = {
 }
 
 local liftMode = 0
-
 local attachedVehicle = nil
-local skyliftMagnetEnabled = false
 
 --! Helpers
 function StreamModel(selectedModel)
