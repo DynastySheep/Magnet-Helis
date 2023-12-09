@@ -1,5 +1,5 @@
 -- Magnet Helis
--- Made By Dynasty
+-- Made By Dynasty aka Punani
 
 -- [[Auto Updater from https://github.com/hexarobi/stand-lua-auto-updater
 local status, auto_updater = pcall(require, "auto-updater")
@@ -60,10 +60,10 @@ function GetPlayerPosition()
 end
 
 function CheckForVehicle(vehicleName)
-    local currentCargobob = spawnedVehicles[vehicleName]
+    local currentCheck = spawnedVehicles[vehicleName]
 
-    if currentCargobob and DOES_ENTITY_EXIST(currentCargobob) then
-        entities.delete_by_handle(currentCargobob)
+    if currentCheck and DOES_ENTITY_EXIST(currentCheck) then
+        entities.delete_by_handle(currentCheck)
         spawnedVehicles[vehicleName] = nil
     end
 end
